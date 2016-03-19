@@ -13,7 +13,7 @@
 #$ -q smsgroup3
 
 ### set the parallel environment for the queue (g1mpi or g2mpi) and request processors ###
-#$ -pe g3mpi 92
+#$ -pe g3mpi 82
 ### for the best performance, mpi jobs should run from the infiniband scratch dir ###
 ### your scratch dir is set up under the environment variable $IBHOME ###
 ### create directory to run the job via infiniband ###

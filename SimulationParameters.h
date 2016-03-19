@@ -13,7 +13,7 @@ using namespace std;
 	                               		// SIMULATION PARAMETERS //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Number of independent processes //
-const int NUMBER_OF_REPLICAS        = 92;
+const int NUMBER_OF_REPLICAS        = 82;
 
 // Model parameters //
 const double R_0					= 0.7;
@@ -43,18 +43,19 @@ const double GLOBAL_DISPLACEMENT    = pow(SPHERICAL_CONSTRAINT,0.5)/20.0;
 
 // Number of iterations and frequency of replica exchange steps //
 const int TRAINING_PHASE			= 1000;
-const int EQUILIBRATION				= 10000;
+const int EQUILIBRATION				= 100000;
 
 // Total Number of Sweeps = DATA_POINTS * REPLICA_EXCHANGES * GLOBAL_UPDATE_FREQ * METROPOLIS_SWEEPS
 const int DATA_POINTS				= 10;
-const int REPLICA_EXCHANGES		  	= 10000;
+const int REPLICA_EXCHANGES		  	= 500000;
+const bool GLOBAL_UPDATE			= true;
 const int GLOBAL_UPDATE_FREQ 		= 10;
-const int METROPOLIS_SWEEPS     	= (50*POLYMER_LENGTH*AGGREGATE_SIZE);
+const int METROPOLIS_SWEEPS     	= (10*POLYMER_LENGTH*AGGREGATE_SIZE);
 
 // Histogram parameters //
-const double MIN_ENERGY				= -51;
-const double MAX_ENERGY				= 20;
-const int NUMBER_OF_BINS 			=5000;
+const double MIN_ENERGY				= -52;
+const double MAX_ENERGY				= 18;
+const int NUMBER_OF_BINS 			=2000;
 
 // File output parameters //
 const int PRINT_EVERY					= 1000;
