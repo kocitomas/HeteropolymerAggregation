@@ -142,9 +142,9 @@ int main()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                       // File Write & Clean-Up //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	singleDisplacementAcceptanceRatio = singleDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*GLOBAL_UPDATE_FREQ);
-	globalDisplacementAcceptanceRatio = globalDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS);
-	replicaExchangeAcceptanceRatio    = replicaExchangeAcceptanceRatio/REPLICA_EXCHANGES;
+	singleDisplacementAcceptanceRatio = singleDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*GLOBAL_UPDATE_FREQ*DATA_POINTS);
+	globalDisplacementAcceptanceRatio = globalDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*DATA_POINTS);
+	replicaExchangeAcceptanceRatio    = replicaExchangeAcceptanceRatio/(REPLICA_EXCHANGES*DATA_POINTS);
 	cout << localTemperature << "\t" << singleDisplacementAcceptanceRatio << "\t" << globalDisplacementAcceptanceRatio << "\t" << replicaExchangeAcceptanceRatio << "\n";
 	     
 	printEnergyHistograms(myRank,*totalEnergyHistogram, localTemperature, DATA_POINTS);
