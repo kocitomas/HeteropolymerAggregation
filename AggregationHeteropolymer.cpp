@@ -85,17 +85,23 @@ int main()
 		replicaExchangeUpdate(commSize,myRank,MPI_COMM_WORLD,*myAggregate,temperatureArray);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                           // Acceptance Ratios //
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
+	double singleDisplacementAcceptanceRatio 	= 0.0;
+	double globalDisplacementAcceptanceRatio 	= 0.0;
+	double replicaExchangeAcceptanceRatio 		= 0.0;
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                            // Data Collection //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// Acceptance ratios
-	double singleDisplacementAcceptanceRatio = 0.0;
-	double globalDisplacementAcceptanceRatio = 0.0;
-	double replicaExchangeAcceptanceRatio = 0.0;
+
 	
 	for (int dataPoint = 0; dataPoint < DATA_POINTS; dataPoint ++)
 	{
+		// Temporary Histogram //
 		ExtendedHistogram *temporaryEnergyHistogram 	= new ExtendedHistogram(NUMBER_OF_BINS,MIN_ENERGY,MAX_ENERGY,0.0);
 
 		for(int i = 0; i < REPLICA_EXCHANGES; i++)
@@ -106,10 +112,10 @@ int main()
 				{
 					if(myRank != 0)
 					{
-						singleDisplacementAcceptanceRatio +=   myAggregate 	-> performSingleMetropolisUpdate(SPHERICAL_CONSTRAINT,trainedDisplacement,localTemperature,MAX_ENERGY);
-						aggregateEnergy = myAggregate 	-> getTotalEnergy();
-						totalEnergyHistogram		-> updateAtValueByIncrement(aggregateEnergy,1.0);
-						temporaryEnergyHistogram    -> updateAtValueByIncrement(aggregateEnergy,1.0);
+						singleDisplacementAcceptanceRatio 	+=   myAggregate 	-> performSingleMetropolisUpdate(SPHERICAL_CONSTRAINT,trainedDisplacement,localTemperature,MAX_ENERGY);
+						aggregateEnergy 					 =   myAggregate 	-> getTotalEnergy();
+						totalEnergyHistogram									-> updateAtValueByIncrement(aggregateEnergy,1.0);
+						temporaryEnergyHistogram    							-> updateAtValueByIncrement(aggregateEnergy,1.0);
 					} 
 				}
 				
@@ -117,15 +123,15 @@ int main()
 				{
 					if(myRank != 0)
 					{
-						globalDisplacementAcceptanceRatio +=   myAggregate 	-> performGlobalMetropolisUpdate(SPHERICAL_CONSTRAINT,GLOBAL_DISPLACEMENT,localTemperature,MAX_ENERGY);
-						aggregateEnergy = myAggregate 	-> getTotalEnergy();
-						totalEnergyHistogram		-> updateAtValueByIncrement(aggregateEnergy,1.0);
-						temporaryEnergyHistogram    -> updateAtValueByIncrement(aggregateEnergy,1.0);
+						globalDisplacementAcceptanceRatio 	+=   myAggregate 	-> performGlobalMetropolisUpdate(SPHERICAL_CONSTRAINT,GLOBAL_DISPLACEMENT,localTemperature,MAX_ENERGY);
+						aggregateEnergy 					 =   myAggregate 	-> getTotalEnergy();
+						totalEnergyHistogram				-> updateAtValueByIncrement(aggregateEnergy,1.0);
+						temporaryEnergyHistogram    		-> updateAtValueByIncrement(aggregateEnergy,1.0);
 					}
 				} 
 			}
 
-			// Perform Replica Exchange Update
+			// Perform Replica Exchange Update //
 			replicaExchangeAcceptanceRatio += replicaExchangeUpdate(commSize,myRank,MPI_COMM_WORLD,*myAggregate,temperatureArray);
 
 			if(i%PRINT_EVERY == 0)
@@ -142,6 +148,7 @@ int main()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                       // File Write & Clean-Up //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	singleDisplacementAcceptanceRatio = singleDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*GLOBAL_UPDATE_FREQ*DATA_POINTS);
 	globalDisplacementAcceptanceRatio = globalDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*DATA_POINTS);
 	replicaExchangeAcceptanceRatio    = replicaExchangeAcceptanceRatio/(REPLICA_EXCHANGES*DATA_POINTS);

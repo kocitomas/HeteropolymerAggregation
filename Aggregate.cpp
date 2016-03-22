@@ -173,19 +173,17 @@ void Aggregate::updatePolymerEnergy(int whichPolymer,int whichMonomer)
 
 int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, double updateDisplacementMagnitude, double canonicalTemperature, double maxAllowedEnergy)
 {
-	RESULT updateSuccess;
 	double dx,dy,dz;
-	int whichMonomer,whichPolymer;
 
 	// Choose randomly both the polymer and the monomer to be updated
-	whichPolymer = genrandIndex(AggregateSize);
-	whichMonomer = genrandIndex(PolymerChainLength);
+	int whichPolymer = genrandIndex(AggregateSize);
+	int whichMonomer = genrandIndex(PolymerChainLength);
 
 	// Generate a normalized triplet of displacement coordinates
 	genrandDisplacementUpdate(updateDisplacementMagnitude,dx,dy,dz);
 
 	// Perform a displacement update within fixed spherical boundaries
-	updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer,whichMonomer, dx,dy,dz, constraintRadiusSquared);
+	RESULT updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer,whichMonomer, dx,dy,dz, constraintRadiusSquared);
 
 	// Revert to previous configuration and exit the function if the update was not accepted
 	if (updateSuccess == REJECTED){
@@ -242,12 +240,10 @@ int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, dou
 
 int Aggregate::performGlobalMetropolisUpdate(double constraintRadiusSquared, double updateDisplacementMagnitude, double canonicalTemperature, double maxAllowedEnergy)
 {
-	RESULT updateSuccess;
 	double dx,dy,dz;
-	int whichPolymer;
 
 	// Choose randomly the polymer to be updated
-	whichPolymer = genrandIndex(AggregateSize);
+	int whichPolymer = genrandIndex(AggregateSize);
 
 	// Generate a normalized triplet of displacement coordinates
 	genrandDisplacementUpdate(updateDisplacementMagnitude,dx,dy,dz);
@@ -258,7 +254,7 @@ int Aggregate::performGlobalMetropolisUpdate(double constraintRadiusSquared, dou
 	// Perform a displacement update within fixed spherical boundaries for the whole polymer
 	for (int i = 0; i < PolymerChainLength; i ++)
 	{
-		updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer, i, dx,dy,dz, constraintRadiusSquared);
+		RESULT updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer, i, dx,dy,dz, constraintRadiusSquared);
 		
 		// Revert to previous configuration and exit the function if the updated position is out of bounds
 		if (updateSuccess == REJECTED){
@@ -291,10 +287,7 @@ int Aggregate::performGlobalMetropolisUpdate(double constraintRadiusSquared, dou
 		return 1;
 	}
 
-	// Check if the total energy is withing the defined bounds or reject the update
-	double tempAggregateEnergy = AggregateEnergy + globalEnergyDifference;
-
-	if(tempAggregateEnergy >= maxAllowedEnergy){
+	if((AggregateEnergy + globalEnergyDifference) >= maxAllowedEnergy){
 		for (int j = PolymerChainLength-1; j >= 0; j--)
 			{
 				updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer, j, -dx,-dy,-dz, constraintRadiusSquared);

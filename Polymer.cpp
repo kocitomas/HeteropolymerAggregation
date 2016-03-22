@@ -80,46 +80,7 @@ RESULT Polymer::updatePositionWithSphericalBoundaries(int monomerIndex, double d
 		return REJECTED;
 	}
 
-
-	// Check if updated monomer is withing allowed distance from its bonded neighboors
-	double testDistanceLeft, testDistanceRight;
-	if (monomerIndex == 0)
-	{
-		testDistanceRight = MonomerArray[monomerIndex] - MonomerArray[monomerIndex+1];
-		if ((testDistanceRight < FENE_TEST_MIN) || (testDistanceRight > FENE_TEST_MAX))
-		{
-			return  REJECTED;
-		}
-		else
-		{
-			return ACCEPTED;
-		}
-	}
-	else if (monomerIndex == (PolymerLength - 1))
-	{
-		testDistanceLeft = MonomerArray[monomerIndex] - MonomerArray[monomerIndex-1];
-		if ((testDistanceLeft < FENE_TEST_MIN) || (testDistanceLeft > FENE_TEST_MAX))
-		{
-			return  REJECTED;
-		}
-		else
-		{
-			return ACCEPTED;
-		}
-	}
-	else
-	{
-		testDistanceLeft 	= MonomerArray[monomerIndex] - MonomerArray[monomerIndex-1];
-		testDistanceRight 	= MonomerArray[monomerIndex] - MonomerArray[monomerIndex+1];
-		if ((testDistanceLeft < FENE_TEST_MIN) || (testDistanceLeft > FENE_TEST_MAX) || (testDistanceRight < FENE_TEST_MIN) || (testDistanceRight > FENE_TEST_MAX))
-		{
-			return  REJECTED;
-		}
-		else
-		{
-			return ACCEPTED;
-		}	
-	}
+	return ACCEPTED;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,15 +184,4 @@ void Polymer::updateInterMonomerEnergyMatrix(int monomerIndex)
 		InterMonomerPotentialEnergyMatrix[(i*PolymerLength) + monomerIndex] = MonomerTemporaryPotentialEnergy[i];
 	}
 }		
-		
-
-	
-
-	
-	
-
-	
-			
-	
-	
 		
