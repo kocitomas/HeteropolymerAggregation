@@ -240,6 +240,7 @@ int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, dou
 
 int Aggregate::performGlobalMetropolisUpdate(double constraintRadiusSquared, double updateDisplacementMagnitude, double canonicalTemperature, double maxAllowedEnergy)
 {
+	RESULT updateSuccess;
 	double dx,dy,dz;
 
 	// Choose randomly the polymer to be updated
@@ -254,7 +255,7 @@ int Aggregate::performGlobalMetropolisUpdate(double constraintRadiusSquared, dou
 	// Perform a displacement update within fixed spherical boundaries for the whole polymer
 	for (int i = 0; i < PolymerChainLength; i ++)
 	{
-		RESULT updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer, i, dx,dy,dz, constraintRadiusSquared);
+		updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer, i, dx,dy,dz, constraintRadiusSquared);
 		
 		// Revert to previous configuration and exit the function if the updated position is out of bounds
 		if (updateSuccess == REJECTED){

@@ -125,8 +125,8 @@ int main()
 					{
 						globalDisplacementAcceptanceRatio 	+=   myAggregate 	-> performGlobalMetropolisUpdate(SPHERICAL_CONSTRAINT,GLOBAL_DISPLACEMENT,localTemperature,MAX_ENERGY);
 						aggregateEnergy 					 =   myAggregate 	-> getTotalEnergy();
-						totalEnergyHistogram				-> updateAtValueByIncrement(aggregateEnergy,1.0);
-						temporaryEnergyHistogram    		-> updateAtValueByIncrement(aggregateEnergy,1.0);
+						totalEnergyHistogram									-> updateAtValueByIncrement(aggregateEnergy,1.0);
+						temporaryEnergyHistogram    							-> updateAtValueByIncrement(aggregateEnergy,1.0);
 					}
 				} 
 			}
