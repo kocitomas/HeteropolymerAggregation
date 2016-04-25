@@ -22,23 +22,31 @@ class Aggregate
 
 		// Constructor for HOMOPOLYMER simulations
 		Aggregate(int aggregateSize, int polymerChainLength, double monomerTypeArrayIntra[], double monomerTypeArrayInter[], bool bondedLJ);
-		
 		~Aggregate();
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // GETTERS/SETTERS //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		double getEnergyOfPolymer(int whichPolymer){return PolymerPotentialEnergies[whichPolymer];}
+		double getPotentialEnergyOfPolymer(int whichPolymer){return PolymerPotentialEnergies[whichPolymer];}
+		double getKineticEnergyOfPolymer(int whichPolymer){return PolymerKineticEnergies[whichPolymer];}
+
 		double getInteractionEnergy(){return AggregateInteractionEnergy;}
-		double getTotalEnergy(){return AggregateEnergy;}
+		double getTotalEnergy(){return AggregateTotalEnergy;}
+		double getPotentialEnergy(){return AggregatePotentialEnergy;}
+		double getKineticEnergy(){return AggregateKineticEnergy;}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // DISPLACEMENT UPDATE //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		RESULT updatePositionWithSphericalBoundaries(int whichPolymer,int whichMonomer,double dx, double dy, double dz, double constraintRadiusSquared);
-	
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	                               // MOMENTUM UPDATE //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		void updateMomentum(int whichPolymer,int whichMonomer,double dPx, double dPy, double dPz);
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // ENERGY CALCULATION//
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -54,10 +62,7 @@ class Aggregate
 	                               // ENERGY CHANGE CALCULATION//
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// Use with Single Displacement Metropolis Update //
-		double findTotalEnergyDifferenceDueToUpdate(int whichPolymer, int whichMonomer);
-		
-
-
+		double findPotentialEnergyDifferenceDueToUpdate(int whichPolymer, int whichMonomer);
 		double findInteractionEnergyDifferenceDueToUpdate(int whichPolymer, int whichMonomer);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,9 +70,8 @@ class Aggregate
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		// Use whenever a displacement updated is accepted 
-		void updatePolymerEnergy(int whichPolymer,int whichMonomer);
-
-		void updateTotalEnergy(int whichPolymer, int whichMonomer);
+		void updatePolymerPotentialEnergy(int whichPolymer,int whichMonomer);
+		void updateAggregatePotentialEnergy(int whichPolymer, int whichMonomer);
 		void updateInteractionEnergy(int whichPolymer,int whichMonomer);
 		
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,6 +84,8 @@ class Aggregate
 		// Global Displacement Metropolis Update //
 		int performGlobalMetropolisUpdate(double constraintRadiusSquared, double updateDisplacementMagnitude, double canonicalTemperature, double maxAllowedEnergy);
 
+		// Single Displacement Momentum Metropolis Update //
+		int performSingleMomentumMetropolisUpdate(double updateDisplacementMagnitude, double canonicalTemperature, double maxAllowedEnergy);
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // AGGREGATE STRUCTURAL QUANTITIES //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -94,19 +100,23 @@ class Aggregate
 
 		int 		AggregateSize;
 		int 		PolymerChainLength;
+
 		double 		AggregateInteractionEnergy;
-		double 		AggregateEnergy;
+		double 		AggregatePotentialEnergy;
+		double 		AggregateKineticEnergy;
+		double 		AggregateTotalEnergy;
 
 		double 		*InteractionEnergyMatrix;
 		double 		*TempInteractionEnergyArray;
 		double 		*PolymerPotentialEnergies;
+		double 		*PolymerKineticEnergies;
 
 		double 		CenterOfMassX, CenterOfMassY, CenterOfMassZ;
 
 
 		// Helper variables //
 		double InteractionEnergyDifference;
-		double PolymerEnergyDifference;
+		double PolymerPotentialEnergyDifference;
 
 };
 #endif

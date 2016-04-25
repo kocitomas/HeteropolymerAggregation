@@ -22,6 +22,8 @@ int main()
 	double temperatureArray[NUMBER_OF_REPLICAS];
 	double localTemperature;
 	double aggregateEnergy;
+	double aggregatePotentialEnergy;
+	double aggregateKineticEnergy;
 	initializeTemperatures(commSize,myRank,localTemperature,temperatureArray);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +50,9 @@ int main()
                                       // Histogram Initialization //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	ExtendedHistogram *totalEnergyHistogram 	= new ExtendedHistogram(NUMBER_OF_BINS,MIN_ENERGY,MAX_ENERGY,0.0);
+	ExtendedHistogram *totalEnergyHistogram 		= new ExtendedHistogram(NUMBER_OF_BINS,MIN_ENERGY,MAX_ENERGY,0.0);
+	ExtendedHistogram *potentialEnergyHistogram 	= new ExtendedHistogram(NUMBER_OF_BINS,MIN_ENERGY,MAX_ENERGY,0.0);
+	ExtendedHistogram *kineticEnergyHistogram 		= new ExtendedHistogram(NUMBER_OF_BINS,0.0,MAX_KINETIC_ENERGY,0.0);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                         // Equilibration and optimization //
@@ -61,7 +65,14 @@ int main()
 	{
 		for(int j = 0; j < METROPOLIS_SWEEPS; j++)
 		{
-			if(myRank != 0) myAggregate -> performSingleMetropolisUpdate(SPHERICAL_CONSTRAINT,SINGLE_DISPLACEMENT,localTemperature,MAX_ENERGY);	 
+			if(myRank != 0)
+			{
+				myAggregate -> performSingleMetropolisUpdate(SPHERICAL_CONSTRAINT,SINGLE_DISPLACEMENT,localTemperature,MAX_ENERGY);	 
+				if(MOMENTUM_UPDATE)
+				{
+					myAggregate -> performSingleMomentumMetropolisUpdate(MOMENTUM_DISPLACEMENT,localTemperature,MAX_ENERGY);
+				}
+			} 
 		} 
 		replicaExchangeUpdate(commSize,myRank,MPI_COMM_WORLD,*myAggregate,temperatureArray);
 	}
@@ -80,7 +91,14 @@ int main()
 	{
 		for(int j = 0; j < METROPOLIS_SWEEPS; j++)
 		{
-			if(myRank != 0) myAggregate -> performSingleMetropolisUpdate(SPHERICAL_CONSTRAINT,trainedDisplacement,localTemperature,MAX_ENERGY);	 
+			if(myRank != 0)
+			{
+				myAggregate -> performSingleMetropolisUpdate(SPHERICAL_CONSTRAINT,trainedDisplacement,localTemperature,MAX_ENERGY);	 
+				if(MOMENTUM_UPDATE)
+				{
+					myAggregate -> performSingleMomentumMetropolisUpdate(MOMENTUM_DISPLACEMENT,localTemperature,MAX_ENERGY);
+				}
+			} 
 		} 
 		replicaExchangeUpdate(commSize,myRank,MPI_COMM_WORLD,*myAggregate,temperatureArray);
 	}
@@ -93,6 +111,7 @@ int main()
 	double singleDisplacementAcceptanceRatio 	= 0.0;
 	double globalDisplacementAcceptanceRatio 	= 0.0;
 	double replicaExchangeAcceptanceRatio 		= 0.0;
+	double momentumUpdateAcceptanceRatio		= 0.0;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                            // Data Collection //
@@ -116,6 +135,13 @@ int main()
 						aggregateEnergy 					 =   myAggregate 	-> getTotalEnergy();
 						totalEnergyHistogram									-> updateAtValueByIncrement(aggregateEnergy,1.0);
 						temporaryEnergyHistogram    							-> updateAtValueByIncrement(aggregateEnergy,1.0);
+
+						aggregatePotentialEnergy			 = myAggregate		-> getPotentialEnergy();
+						potentialEnergyHistogram								-> updateAtValueByIncrement(aggregatePotentialEnergy,1.0);
+
+						momentumUpdateAcceptanceRatio		+= myAggregate 		-> performSingleMomentumMetropolisUpdate(MOMENTUM_DISPLACEMENT,localTemperature,MAX_ENERGY);
+						aggregateKineticEnergy				 = myAggregate		-> getKineticEnergy();
+						kineticEnergyHistogram 									-> updateAtValueByIncrement(aggregateKineticEnergy,1.0);
 					} 
 				}
 				
@@ -152,9 +178,12 @@ int main()
 	singleDisplacementAcceptanceRatio = singleDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*GLOBAL_UPDATE_FREQ*DATA_POINTS);
 	globalDisplacementAcceptanceRatio = globalDisplacementAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*DATA_POINTS);
 	replicaExchangeAcceptanceRatio    = replicaExchangeAcceptanceRatio/(REPLICA_EXCHANGES*DATA_POINTS);
-	cout << localTemperature << "\t" << singleDisplacementAcceptanceRatio << "\t" << globalDisplacementAcceptanceRatio << "\t" << replicaExchangeAcceptanceRatio << "\n";
+	momentumUpdateAcceptanceRatio 	  = momentumUpdateAcceptanceRatio/(REPLICA_EXCHANGES*METROPOLIS_SWEEPS*GLOBAL_UPDATE_FREQ*DATA_POINTS);
+	cout << localTemperature << "\t" << singleDisplacementAcceptanceRatio << "\t" << globalDisplacementAcceptanceRatio << "\t" << replicaExchangeAcceptanceRatio << "\t" << momentumUpdateAcceptanceRatio <<"\n";
 	     
 	printEnergyHistograms(myRank,*totalEnergyHistogram, localTemperature, DATA_POINTS);
+	printEnergyHistograms(myRank,*potentialEnergyHistogram, localTemperature, DATA_POINTS+1);
+	printEnergyHistograms(myRank,*kineticEnergyHistogram, localTemperature, DATA_POINTS+2);
 	//configurationOutputFile.close();
 	MPI_Finalize(); 
 	

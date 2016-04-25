@@ -7,7 +7,7 @@ using namespace std;
 	                               // DESIGNATED CONSTRUCTOR/DESTRUCTOR //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Aggregate::Aggregate(int aggregateSize, int PolymerChainLength, double monomerTypeArrayIntra[], double monomerTypeArrayInter[], bool bondedLJ):AggregateSize(aggregateSize),PolymerChainLength(PolymerChainLength),InteractionEnergyDifference(0.0),PolymerEnergyDifference(0.0)
+Aggregate::Aggregate(int aggregateSize, int PolymerChainLength, double monomerTypeArrayIntra[], double monomerTypeArrayInter[], bool bondedLJ):AggregateSize(aggregateSize),PolymerChainLength(PolymerChainLength),InteractionEnergyDifference(0.0),PolymerPotentialEnergyDifference(0.0)
 {
 	// Create array of pointers to polymer objects
 	PolymerArray = new Polymer*[AggregateSize];
@@ -15,9 +15,13 @@ Aggregate::Aggregate(int aggregateSize, int PolymerChainLength, double monomerTy
 	// Assign polymer objects to the pointers in the PolymerArray 
 	for(int i = 0; i < AggregateSize; i ++) PolymerArray[i] = new Polymer(PolymerChainLength,0.0,i*R_0,0.0,monomerTypeArrayIntra,monomerTypeArrayInter, bondedLJ);
 	
-	// Store individual polymer energies 
+	// Store individual polymer potential energies 
 	PolymerPotentialEnergies = new double[AggregateSize];
-	for(int i = 0; i < AggregateSize; i++) PolymerPotentialEnergies[i] = PolymerArray[i]-> getPolymerEnergy();
+	for(int i = 0; i < AggregateSize; i++) PolymerPotentialEnergies[i] = PolymerArray[i]-> getPolymerPotentialEnergy();
+
+	// Store individual polymer kinetic energies 
+	PolymerKineticEnergies = new double[AggregateSize];
+	for(int i = 0; i < AggregateSize; i++) PolymerKineticEnergies[i] = PolymerArray[i]-> getPolymerKineticEnergy();
 
 	// Initialize the interaction energy matrix and the temporary interaction energy array 
 	InteractionEnergyMatrix 			= new double[(PolymerChainLength*AggregateSize)*(PolymerChainLength*AggregateSize)];
@@ -30,9 +34,15 @@ Aggregate::Aggregate(int aggregateSize, int PolymerChainLength, double monomerTy
 	calculateInteractionEnergy();
 
 	// Calculate the total potential energy of the aggregate
-	AggregateEnergy = AggregateInteractionEnergy;
+	AggregatePotentialEnergy = AggregateInteractionEnergy;
+	for(int i = 0; i < AggregateSize; i++) AggregatePotentialEnergy += PolymerPotentialEnergies[i];	
 
-	for(int i = 0; i < AggregateSize; i++) AggregateEnergy += PolymerPotentialEnergies[i];	
+	// Calculate the total kinetic energy of the aggregate
+	AggregateKineticEnergy = 0.0;
+	for(int i = 0; i < AggregateSize; i++) AggregateKineticEnergy += PolymerKineticEnergies[i];
+
+	// Calculate the total energy of the aggregate	
+	AggregateTotalEnergy = AggregateKineticEnergy + AggregatePotentialEnergy;
 }
 
 Aggregate::~Aggregate()
@@ -42,6 +52,7 @@ Aggregate::~Aggregate()
 	}
 	delete[] PolymerArray;
 	delete[] PolymerPotentialEnergies;
+	delete[] PolymerKineticEnergies;
 	delete[] InteractionEnergyMatrix;
 	delete[] TempInteractionEnergyArray;
 }
@@ -57,6 +68,15 @@ RESULT Aggregate::updatePositionWithSphericalBoundaries(int whichPolymer,int whi
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	                               		// MOMENTUM UPDATES //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Aggregate::updateMomentum(int whichPolymer,int whichMonomer,double dPx, double dPy, double dPz)
+{
+	PolymerArray[whichPolymer]-> updateMomentum(whichMonomer, dPx, dPy, dPz);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // ENERGY CALCULATION //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -67,13 +87,21 @@ void Aggregate::recalculateAggregateEnergy()
 
 	// Calculate polymer energies
 	for(int i = 0; i < AggregateSize; i++){
-		PolymerArray[i] -> recalculatePolymerEnergy();
-		PolymerPotentialEnergies[i] = PolymerArray[i] -> getPolymerEnergy();
+		PolymerArray[i] -> calculatePolymerTotalEnergy();
+		PolymerPotentialEnergies[i] = PolymerArray[i] -> getPolymerPotentialEnergy();
+		PolymerKineticEnergies[i]   = PolymerArray[i] -> getPolymerKineticEnergy();
 	} 
 
-	// Update the Aggregate Energy member variable
-	AggregateEnergy = AggregateInteractionEnergy;
-	for(int i = 0; i < AggregateSize; i++) AggregateEnergy += PolymerPotentialEnergies[i];	
+	// Update the Aggregate Potential Energy member variable
+	AggregatePotentialEnergy = AggregateInteractionEnergy;
+	for(int i = 0; i < AggregateSize; i++) AggregatePotentialEnergy += PolymerPotentialEnergies[i];	
+
+	// Update the Aggregate Kinetic Energy member variable
+	AggregateKineticEnergy = 0.0;
+	for(int i = 0; i < AggregateSize; i++) AggregateKineticEnergy += PolymerKineticEnergies[i];	
+
+	// Update the Aggregate Total Energy member variable
+	AggregateTotalEnergy = AggregateKineticEnergy + AggregatePotentialEnergy;
 }
 
 void Aggregate::calculateInteractionEnergy()
@@ -108,11 +136,11 @@ void Aggregate::calculateInteractionEnergy()
 	                               // ENERGY CHANGE CALCULATION//
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-double Aggregate::findTotalEnergyDifferenceDueToUpdate(int whichPolymer, int whichMonomer)
+double Aggregate::findPotentialEnergyDifferenceDueToUpdate(int whichPolymer, int whichMonomer)
 {
 	InteractionEnergyDifference = findInteractionEnergyDifferenceDueToUpdate(whichPolymer,whichMonomer);
-	PolymerEnergyDifference 	= PolymerArray[whichPolymer] -> getEnergyDifferenceDueToUpdate(whichMonomer);
-	return (InteractionEnergyDifference + PolymerEnergyDifference);
+	PolymerPotentialEnergyDifference 	= PolymerArray[whichPolymer] -> getEnergyDifferenceDueToPositionalUpdate(whichMonomer);
+	return (InteractionEnergyDifference + PolymerPotentialEnergyDifference);
 }
 
 double Aggregate::findInteractionEnergyDifferenceDueToUpdate(int whichPolymer, int whichMonomer)
@@ -139,13 +167,13 @@ double Aggregate::findInteractionEnergyDifferenceDueToUpdate(int whichPolymer, i
 	                               // ENERGY UPDATE//
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Aggregate::updateTotalEnergy(int whichPolymer, int whichMonomer)
+void Aggregate::updateAggregatePotentialEnergy(int whichPolymer, int whichMonomer)
 {
 	updateInteractionEnergy(whichPolymer,whichMonomer);
-	updatePolymerEnergy(whichPolymer,whichMonomer);
-	AggregateEnergy = AggregateInteractionEnergy;
+	updatePolymerPotentialEnergy(whichPolymer,whichMonomer);
+	AggregatePotentialEnergy = AggregateInteractionEnergy;
 
-	for(int i = 0; i < AggregateSize; i++) AggregateEnergy += PolymerPotentialEnergies[i];	
+	for(int i = 0; i < AggregateSize; i++) AggregatePotentialEnergy += PolymerPotentialEnergies[i];	
 }
 
 void Aggregate::updateInteractionEnergy(int whichPolymer,int whichMonomer)
@@ -161,10 +189,10 @@ void Aggregate::updateInteractionEnergy(int whichPolymer,int whichMonomer)
 	AggregateInteractionEnergy += InteractionEnergyDifference;
 }
 
-void Aggregate::updatePolymerEnergy(int whichPolymer,int whichMonomer)
+void Aggregate::updatePolymerPotentialEnergy(int whichPolymer,int whichMonomer)
 {
 	PolymerArray[whichPolymer] -> updateInterMonomerEnergyMatrix(whichMonomer);
-	PolymerPotentialEnergies[whichPolymer] += PolymerEnergyDifference;
+	PolymerPotentialEnergies[whichPolymer] += PolymerPotentialEnergyDifference;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -193,7 +221,7 @@ int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, dou
 	}
 
 	// Calculate the energy difference due to the update
-	double energyDifference = findTotalEnergyDifferenceDueToUpdate(whichPolymer,whichMonomer);
+	double energyDifference = findPotentialEnergyDifferenceDueToUpdate(whichPolymer,whichMonomer);
 
 	// Check for nan!!!
 	if(energyDifference != energyDifference)
@@ -205,12 +233,12 @@ int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, dou
 
 	// Accept the update if the energy of the new state is less or equal to that of the old state
 	if(energyDifference <= 0.0){
-		updateTotalEnergy(whichPolymer,whichMonomer);
+		updateAggregatePotentialEnergy(whichPolymer,whichMonomer);
 		return 1;
 	}
 
 	// Check if the total energy is withing the defined bounds or reject the update
-	double tempAggregateEnergy = AggregateEnergy + energyDifference;
+	double tempAggregateEnergy = AggregateTotalEnergy + energyDifference;
 
 	if(tempAggregateEnergy >= maxAllowedEnergy){
 		updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer,whichMonomer, -dx,-dy,-dz, constraintRadiusSquared);
@@ -229,7 +257,7 @@ int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, dou
 		return 0;
 	}
 	else{
-		updateTotalEnergy(whichPolymer,whichMonomer);
+		updateAggregatePotentialEnergy(whichPolymer,whichMonomer);
 		return 1;
 	}
 }
@@ -288,7 +316,7 @@ int Aggregate::performGlobalMetropolisUpdate(double constraintRadiusSquared, dou
 		return 1;
 	}
 
-	if((AggregateEnergy + globalEnergyDifference) >= maxAllowedEnergy){
+	if((AggregateTotalEnergy + globalEnergyDifference) >= maxAllowedEnergy){
 		for (int j = PolymerChainLength-1; j >= 0; j--)
 			{
 				updateSuccess = updatePositionWithSphericalBoundaries(whichPolymer, j, -dx,-dy,-dz, constraintRadiusSquared);
@@ -316,6 +344,73 @@ int Aggregate::performGlobalMetropolisUpdate(double constraintRadiusSquared, dou
 	}
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	                               // METROPOLIS SINGLE MOMENTUM UPDATE //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int Aggregate::performSingleMomentumMetropolisUpdate(double updateDisplacementMagnitude, double canonicalTemperature, double maxAllowedEnergy)
+{
+	double dPx,dPy,dPz;
+
+	// Choose randomly both the polymer and the monomer to be updated
+	int whichPolymer = genrandIndex(AggregateSize);
+	int whichMonomer = genrandIndex(PolymerChainLength);
+
+	// Generate a normalized triplet of displacement coordinates
+	genrandDisplacementUpdate(updateDisplacementMagnitude,dPx,dPy,dPz);
+
+	// Get prior kinetic energy of monomer
+	double priorKineticEnergy = PolymerArray[whichPolymer] -> getKineticEnergyOfMonomer(whichMonomer);
+
+	// Perform a displacement in momentum space
+	updateMomentum(whichPolymer,whichMonomer,dPx,dPy,dPz);
+
+	// Calculate the energy difference due to the update
+	double updatedKineticEnergy = PolymerArray[whichPolymer] -> getKineticEnergyOfMonomer(whichMonomer);
+	double energyDifference = updatedKineticEnergy - priorKineticEnergy;
+
+	// Check for nan!!!
+	if(energyDifference != energyDifference)
+	{
+		updateMomentum(whichPolymer,whichMonomer,-dPx,-dPy,-dPz);
+		return 0;
+	}
+
+	// Accept the update if the energy of the new state is less or equal to that of the old state
+	if(energyDifference <= 0.0){
+		PolymerArray[whichPolymer] -> updateKineticEnergy(energyDifference);
+		PolymerKineticEnergies[whichPolymer] = PolymerArray[whichPolymer] -> getPolymerKineticEnergy();
+		AggregateKineticEnergy += energyDifference;
+		AggregateTotalEnergy   += energyDifference;
+		return 1;
+	}
+
+	// Check if the total energy is withing the defined bounds or reject the update
+	double tempAggregateEnergy = AggregateTotalEnergy + energyDifference;
+
+	if(tempAggregateEnergy >= maxAllowedEnergy){
+		updateMomentum(whichPolymer,whichMonomer,-dPx,-dPy,-dPz);
+		return 0;
+	}
+
+	// Calculate the exponential term to be used in the metropolis criterion and generate a random number in the interval (0,1)
+	double expFactor = exp(-(energyDifference/canonicalTemperature));
+	double randFactor = genrandBasic();
+
+	// Reject the update if the exponential term is less or equal to the randomly generated number in the interval (0,1)
+	if(randFactor > expFactor){
+		updateMomentum(whichPolymer,whichMonomer,-dPx,-dPy,-dPz);
+		return 0;
+	}
+	else{
+		PolymerArray[whichPolymer] -> updateKineticEnergy(energyDifference);
+		PolymerKineticEnergies[whichPolymer] = PolymerArray[whichPolymer] -> getPolymerKineticEnergy();
+		AggregateKineticEnergy += energyDifference;
+		AggregateTotalEnergy   += energyDifference;
+		return 1;
+	}
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // AGGREGATE STRUCTURAL QUANTITIES //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

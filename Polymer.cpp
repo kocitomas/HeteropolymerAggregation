@@ -5,7 +5,7 @@ using namespace std;
 	                               	// CONSTRUCTOR/DESTRUCTOR //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Polymer::Polymer(int polymerLength, double xInit, double yInit, double zInit, double monomerTypeArrayIntra[], double monomerTypeArrayInter[], double bondedLJ):PolymerLength(polymerLength)
+Polymer::Polymer(int polymerLength, double xInit, double yInit, double zInit, double monomerTypeArrayIntra[], double monomerTypeArrayInter[], bool bondedLJ):PolymerLength(polymerLength)
 {
 	// Check for bonded LJ
 	BondedLJ = bondedLJ;
@@ -48,8 +48,14 @@ Polymer::Polymer(int polymerLength, double xInit, double yInit, double zInit, do
 	MonomerTemporaryPotentialEnergy = new double[PolymerLength];								
 	for (int i = 0; i < PolymerLength; i++) MonomerTemporaryPotentialEnergy[i] = 0.0;
 	
-	//Calculate the total polymer energy
-	PolymerEnergy = sumPolymerPotentialEnergy();
+	//Create and initalize the polymer momentum array
+	MomentumArray = new double[3*PolymerLength];
+	for (int i = 0; i < 3*PolymerLength; i++) MomentumArray[i] = 0.0;
+
+	//Calculate polymer potential energy
+	PolymerPotentialEnergy = sumPolymerPotentialEnergy();
+	PolymerKineticEnergy   = 0.0;
+	PolymerTotalEnergy	   = PolymerPotentialEnergy + PolymerKineticEnergy;
 }
 
 Polymer::~Polymer()
@@ -58,6 +64,7 @@ Polymer::~Polymer()
 	delete [] InterMonomerPotentialEnergyMatrix;
 	delete [] MonomerTemporaryPotentialEnergy;
 	delete [] MonomerTypeArrayIntra;
+	delete [] MomentumArray;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,10 +91,31 @@ RESULT Polymer::updatePositionWithSphericalBoundaries(int monomerIndex, double d
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	                               		// MOMENTUM UPDATE //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Polymer::updateMomentum(int monomerIndex, double dPx, double dPy, double dPz)
+{
+	MomentumArray[(3*monomerIndex)] 	+= dPx;
+	MomentumArray[(3*monomerIndex)+1] 	+= dPy;
+	MomentumArray[(3*monomerIndex)+2] 	+= dPz;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	                               // ENERGY CALCULATIONS //
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+void Polymer::calculatePolymerTotalEnergy()
+{
+	calculatePolymerPotentialEnergy();
+	calculatePolymerKineticEnergy();
+
+	PolymerTotalEnergy = PolymerPotentialEnergy + PolymerKineticEnergy;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // POTENTIAL ENERGY CALCULATIONS //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
-void Polymer::recalculatePolymerEnergy()
+void Polymer::calculatePolymerPotentialEnergy()
 {
 	// Reset energy array to zero
 	for (int i = 0; i < PolymerLength; i++)
@@ -124,27 +152,27 @@ void Polymer::recalculatePolymerEnergy()
 		}
 	}
 
-	// Update the PolymerEnergy member variable
-	PolymerEnergy = sumPolymerPotentialEnergy();
+	// Update the PolymerPotentialEnergy member variable
+	PolymerPotentialEnergy = sumPolymerPotentialEnergy();
 }
 	
 double Polymer::sumPolymerPotentialEnergy() const
 {	
-	double polymerEnergy	= 0.0;
+	double polymerPotentialEnergy	= 0.0;
 	
 	// Sum inter-monomer potential energy matrix to get the total polymer energy
 	for (int i = 0; i < (PolymerLength - 1); i++)
 	{
 		for(int j = (i+1); j < PolymerLength; j++)
 		{
-			polymerEnergy += InterMonomerPotentialEnergyMatrix[(i*PolymerLength)+j];
+			polymerPotentialEnergy += InterMonomerPotentialEnergyMatrix[(i*PolymerLength)+j];
 		}
 	}
 	
-	return polymerEnergy;
+	return polymerPotentialEnergy;
 }
 
-double Polymer::getEnergyDifferenceDueToUpdate(int monomerIndex)
+double Polymer::getEnergyDifferenceDueToPositionalUpdate(int monomerIndex)
 {
 	double energyDifference = 0.0;
 	
@@ -183,5 +211,32 @@ void Polymer::updateInterMonomerEnergyMatrix(int monomerIndex)
 		InterMonomerPotentialEnergyMatrix[(monomerIndex*PolymerLength) + i] = MonomerTemporaryPotentialEnergy[i];
 		InterMonomerPotentialEnergyMatrix[(i*PolymerLength) + monomerIndex] = MonomerTemporaryPotentialEnergy[i];
 	}
-}		
-		
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	                               // KINETIC ENERGY CALCULATIONS //
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 		
+
+void Polymer::calculatePolymerKineticEnergy()
+{
+	double kineticEnergy = 0.0;
+
+	for(int i = 0; i < 3*PolymerLength; i ++)
+	{
+		kineticEnergy += (MomentumArray[i]*MomentumArray[i])/2.0;
+	}
+
+	PolymerKineticEnergy = kineticEnergy;
+}
+
+double Polymer::getKineticEnergyOfMonomer(int whichMonomer)
+{
+	double kineticEnergy = 0.0;
+
+	for(int i = 0; i < 3; i ++)
+	{
+		kineticEnergy += (MomentumArray[(whichMonomer*3)+i]*MomentumArray[(whichMonomer*3)+i])/2.0;
+	}
+
+	return kineticEnergy;
+}

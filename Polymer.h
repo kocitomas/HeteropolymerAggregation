@@ -13,6 +13,7 @@ class Polymer
 		Monomer *MonomerArray;
 		double	*MonomerTypeArrayIntra;
 		double 	*MonomerTypeArrayInter;
+		double  *MomentumArray;
 	
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               // CONSTRUCTOR/DESTRUCTOR //
@@ -21,7 +22,7 @@ class Polymer
 		//Initiates Polymer with N monomers in a straight line with spacing given by R_0
 		//The position of the first monomer in the chain is given by (xInit,yInit,zInit)
 		
-		Polymer(int polymerLength, double xInit, double yInit, double zInit, double monomerTypeArrayIntra[], double monomerTypeArrayInter[], double bondedLJ);
+		Polymer(int polymerLength, double xInit, double yInit, double zInit, double monomerTypeArrayIntra[], double monomerTypeArrayInter[], bool bondedLJ);
 		~Polymer();
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +30,10 @@ class Polymer
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 		int    getPolymerLength()const{return PolymerLength;}
-	    double getPolymerEnergy()const{return PolymerEnergy;}
+	    double getPolymerPotentialEnergy()const{return PolymerPotentialEnergy;}
+	    double getPolymerKineticEnergy()const{return PolymerKineticEnergy;}
+	    double getKineticEnergyOfMonomer(int whichMonomer);
+	    double getPolymerTotalEnergy()const{return PolymerTotalEnergy;}
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	                               		// POSITIONAL UPDATE //
@@ -42,27 +46,44 @@ class Polymer
 	    RESULT updatePositionWithSphericalBoundaries(int monomerIndex, double dx, double dy, double dz, double constraintRadiusSquared); 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	                               // POTENTIAL ENERGY CALCULATIONS //
+	                               		// MOMENTUM UPDATE //
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////   
+	    void updateMomentum(int monomerIndex, double dPx, double dPy, double dPz); 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	                               // POTENTIAL AND ENERGY CALCULATIONS //
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// 
 
 	    // Calculates and returns the current potential energy of the polymer
 		// Use whenever the monomer coordinates are updated without modifying the inter-monomer energies
-	    void recalculatePolymerEnergy();
+	    void calculatePolymerPotentialEnergy();
+
+	    // Calculates the kinetic energy of the polymer
+	    void calculatePolymerKineticEnergy();
+
+	    // Calculates the total energy of the polymer
+	    void calculatePolymerTotalEnergy();
 
 	    // Sums the InterMonomerPotentialEnergyMatrix and returns the current total potential energy of the polymer  																
 	    double sumPolymerPotentialEnergy() const;
 
 	    // Returns the energy difference between the updated and the old state provided the index of the displaced monomer
-	    double getEnergyDifferenceDueToUpdate(int monomerIndex);	
+	    double getEnergyDifferenceDueToPositionalUpdate(int monomerIndex);	
 
 	    // Updates the potential energy array with the data from the temporary array. Use after a proposed update is accepted
 	    void   updateInterMonomerEnergyMatrix(int monomerIndex);
+
+	    void updateKineticEnergy(double energyDifference){PolymerKineticEnergy += energyDifference;}
 
 	    	  
 	private:
 		bool	BondedLJ;
 		int 	PolymerLength;
-		double  PolymerEnergy;
+
+		double  PolymerPotentialEnergy;
+		double 	PolymerKineticEnergy;
+		double  PolymerTotalEnergy;
+
 	  	double  *InterMonomerPotentialEnergyMatrix;
 	  	double  *MonomerTemporaryPotentialEnergy;
 	  	double 	*HeteroPolymerModifiers;

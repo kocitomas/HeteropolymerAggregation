@@ -127,12 +127,41 @@ int replicaExchangeUpdate(int commSize, int myRank, MPI_Comm comm, Aggregate &my
 				}
 			}
 
+			// Store aggregate momenta in an array
+			int momentumArraySize 			= AGGREGATE_SIZE*POLYMER_LENGTH*3;
+			double *momentumArraySend 		= new double[coordinateArraySize];
+			double *momentumArrayReceive 	= new double[coordinateArraySize];
+
+			for (int i = 0; i < AGGREGATE_SIZE; i++)
+			{
+				for(int j = 0; j < POLYMER_LENGTH; j++)
+				{
+					momentumArraySend[(i*POLYMER_LENGTH*3)+(3*j)]		= myAggregate.PolymerArray[i]->MomentumArray[(3*j)];
+					momentumArraySend[(i*POLYMER_LENGTH*3)+(3*j)+1]		= myAggregate.PolymerArray[i]->MomentumArray[(3*j)+1];
+					momentumArraySend[(i*POLYMER_LENGTH*3)+(3*j)+2]		= myAggregate.PolymerArray[i]->MomentumArray[(3*j)+2];
+				}
+			}
+
+			// Exchange the momentum arrays
+	      	MPI_Sendrecv(momentumArraySend, momentumArraySize, MPI_DOUBLE, sendTo, 0, momentumArrayReceive, momentumArraySize, MPI_DOUBLE, receiveFrom, 0, comm, MPI_STATUS_IGNORE);
+
+	      	// Update the momenta of all monomers
+	      	for (int i = 0; i < AGGREGATE_SIZE; i++)
+			{
+				for(int j = 0; j < 3*POLYMER_LENGTH; j++)
+				{
+					myAggregate.PolymerArray[i]->MomentumArray[j] = momentumArrayReceive[j];
+				}
+			}
+
 			// Update the energies of the individual polymers as well as the interaction energy of the cluster
 			myAggregate.recalculateAggregateEnergy();
 
 			// Clean up
 			delete [] coordinateArraySend;
 			delete [] coordinateArrayReceive;
+			delete [] momentumArraySend;
+			delete [] momentumArrayReceive;
 		}
 	}
 	return exchangeAccepted;
