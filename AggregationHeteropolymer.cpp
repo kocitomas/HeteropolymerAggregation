@@ -21,10 +21,11 @@ int main()
 
 	double temperatureArray[NUMBER_OF_REPLICAS];
 	double localTemperature;
+	initializeTemperatures(commSize,myRank,localTemperature,temperatureArray);
+
 	double aggregateEnergy;
 	double aggregatePotentialEnergy;
 	double aggregateKineticEnergy;
-	initializeTemperatures(commSize,myRank,localTemperature,temperatureArray);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                            // Output Files //
@@ -190,6 +191,10 @@ int main()
 	printEnergyHistograms(myRank,*totalEnergyHistogram, localTemperature, DATA_POINTS);
 	printEnergyHistograms(myRank,*potentialEnergyHistogram, localTemperature, DATA_POINTS+1);
 	printEnergyHistograms(myRank,*kineticEnergyHistogram, localTemperature, DATA_POINTS+2);
+
+	printCanonicalQuantitiesfromHistogram(myRank, *totalEnergyHistogram, localTemperature, 1);
+	printCanonicalQuantitiesfromHistogram(myRank, *potentialEnergyHistogram, localTemperature, 2);
+	printCanonicalQuantitiesfromHistogram(myRank, *kineticEnergyHistogram, localTemperature, 3);
 	//configurationOutputFile.close();
 	MPI_Finalize(); 
 	

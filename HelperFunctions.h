@@ -18,5 +18,6 @@ double optimizeDisplacementValues(int myRank, Aggregate &myAggregate, double myT
 
 void printEnergyHistograms(int myRank, ExtendedHistogram &myHistogram, double myTemperature, int fileIndex);
 
+void printCanonicalQuantitiesfromHistogram(int myRank, ExtendedHistogram &myHistogram, double myTemperature, int fileIndex);
 
 #endif

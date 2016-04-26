@@ -245,3 +245,21 @@ void printEnergyHistograms(int myRank, ExtendedHistogram &myHistogram, double my
 	MPI_File_close(&histoFile);
 }
 
+void printCanonicalQuantitiesfromHistogram(int myRank, ExtendedHistogram &myHistogram, double myTemperature, int fileIndex)
+{
+	MPI_File thefile;
+    char   mpiFileName[128];
+    sprintf(mpiFileName, "canonicalQuantitiesFromHistogram.%d", fileIndex);
+	MPI_File_open(MPI_COMM_WORLD, mpiFileName, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &thefile);
+	MPI_File_set_view(thefile, myRank * 3 * sizeof(double), MPI_DOUBLE, MPI_DOUBLE, "native", MPI_INFO_NULL); 
+
+	if(myRank != 0)
+	{
+		double averageAggregateEnergy 	= myHistogram.getAverage();
+		double specificHeat				= (myHistogram.getStandardDeviation())*(myHistogram.getStandardDeviation())/(myTemperature*myTemperature);
+		MPI_File_write(thefile, &myTemperature, 1, MPI_DOUBLE, MPI_STATUS_IGNORE);
+		MPI_File_write(thefile, &averageAggregateEnergy, 1, MPI_DOUBLE, MPI_STATUS_IGNORE);
+		MPI_File_write(thefile, &specificHeat, 1, MPI_DOUBLE, MPI_STATUS_IGNORE);
+	}
+	MPI_File_close(&thefile);
+}
