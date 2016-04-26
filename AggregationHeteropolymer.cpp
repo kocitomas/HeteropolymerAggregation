@@ -52,7 +52,7 @@ int main()
 
 	ExtendedHistogram *totalEnergyHistogram 		= new ExtendedHistogram(NUMBER_OF_BINS,MIN_ENERGY,MAX_ENERGY,0.0);
 	ExtendedHistogram *potentialEnergyHistogram 	= new ExtendedHistogram(NUMBER_OF_BINS,MIN_ENERGY,MAX_ENERGY,0.0);
-	ExtendedHistogram *kineticEnergyHistogram 		= new ExtendedHistogram(NUMBER_OF_BINS,0.0,MAX_KINETIC_ENERGY,0.0);
+	ExtendedHistogram *kineticEnergyHistogram 		= new ExtendedHistogram(NUMBER_OF_BINS,MIN_ENERGY,MAX_KINETIC_ENERGY,0.0);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                         // Equilibration and optimization //
@@ -132,16 +132,22 @@ int main()
 					if(myRank != 0)
 					{
 						singleDisplacementAcceptanceRatio 	+=   myAggregate 	-> performSingleMetropolisUpdate(SPHERICAL_CONSTRAINT,trainedDisplacement,localTemperature,MAX_ENERGY);
-						aggregateEnergy 					 =   myAggregate 	-> getTotalEnergy();
-						totalEnergyHistogram									-> updateAtValueByIncrement(aggregateEnergy,1.0);
-						temporaryEnergyHistogram    							-> updateAtValueByIncrement(aggregateEnergy,1.0);
+							
+						if(MOMENTUM_UPDATE)
+						{
+							momentumUpdateAcceptanceRatio		+= myAggregate 		-> performSingleMomentumMetropolisUpdate(MOMENTUM_DISPLACEMENT,localTemperature,MAX_ENERGY);
+						}
 
-						aggregatePotentialEnergy			 = myAggregate		-> getPotentialEnergy();
-						potentialEnergyHistogram								-> updateAtValueByIncrement(aggregatePotentialEnergy,1.0);
-
-						momentumUpdateAcceptanceRatio		+= myAggregate 		-> performSingleMomentumMetropolisUpdate(MOMENTUM_DISPLACEMENT,localTemperature,MAX_ENERGY);
 						aggregateKineticEnergy				 = myAggregate		-> getKineticEnergy();
 						kineticEnergyHistogram 									-> updateAtValueByIncrement(aggregateKineticEnergy,1.0);
+						
+						aggregatePotentialEnergy			 = myAggregate		-> getPotentialEnergy();
+						potentialEnergyHistogram								-> updateAtValueByIncrement(aggregatePotentialEnergy,1.0);
+						
+						aggregateEnergy 					 = myAggregate 		-> getTotalEnergy();
+						totalEnergyHistogram									-> updateAtValueByIncrement(aggregateEnergy,1.0);
+						temporaryEnergyHistogram    							-> updateAtValueByIncrement(aggregateEnergy,1.0);
+						//cout << aggregateEnergy <<"\t" << aggregatePotentialEnergy+aggregateKineticEnergy << "\t" << aggregatePotentialEnergy << "\t" << aggregateKineticEnergy << "\t" << "\n";
 					} 
 				}
 				

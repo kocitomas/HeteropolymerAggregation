@@ -13,7 +13,7 @@ using namespace std;
 	                               		// SIMULATION PARAMETERS //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Number of independent processes //
-const int NUMBER_OF_REPLICAS        = 82;
+const int NUMBER_OF_REPLICAS        =54;
 const bool MOMENTUM_UPDATE 			= true;
 
 // Model parameters //
@@ -46,16 +46,16 @@ const int TRAINING_PHASE			= 1000;
 const int EQUILIBRATION				= 1000;
 
 // Total Number of Sweeps = DATA_POINTS * REPLICA_EXCHANGES * GLOBAL_UPDATE_FREQ * METROPOLIS_SWEEPS
-const int DATA_POINTS				= 10;
-const int REPLICA_EXCHANGES		  	= 50;
+const int DATA_POINTS				= 1;
+const int REPLICA_EXCHANGES		  	= 1000000;
 const bool GLOBAL_UPDATE			= false;
 const int GLOBAL_UPDATE_FREQ 		= 10;
 const int METROPOLIS_SWEEPS     	= (10*POLYMER_LENGTH*AGGREGATE_SIZE);
 
 // Histogram parameters //
-const double MIN_ENERGY				= -52;
-const double MAX_ENERGY				= 18;
-const double MAX_KINETIC_ENERGY		= 50;
+const double MIN_ENERGY				= -44;
+const double MAX_ENERGY				= 56;
+const double MAX_KINETIC_ENERGY		=100;
 const int NUMBER_OF_BINS 			=2000;
 
 // File output parameters //

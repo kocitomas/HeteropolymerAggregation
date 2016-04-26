@@ -234,6 +234,7 @@ int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, dou
 	// Accept the update if the energy of the new state is less or equal to that of the old state
 	if(energyDifference <= 0.0){
 		updateAggregatePotentialEnergy(whichPolymer,whichMonomer);
+		AggregateTotalEnergy += energyDifference;
 		return 1;
 	}
 
@@ -258,6 +259,7 @@ int Aggregate::performSingleMetropolisUpdate(double constraintRadiusSquared, dou
 	}
 	else{
 		updateAggregatePotentialEnergy(whichPolymer,whichMonomer);
+		AggregateTotalEnergy += energyDifference;
 		return 1;
 	}
 }
