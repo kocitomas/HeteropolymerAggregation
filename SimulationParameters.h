@@ -27,6 +27,8 @@ const double SIGMA_6     	 		= 4.0*(SIGMA_2*SIGMA_2*SIGMA_2);
 const double SIGMA_12 				= SIGMA_6*(SIGMA_2*SIGMA_2*SIGMA_2);
 const double CUTOFF_POTENTIAL		= 0.016316891136;
 const double CUTOFF_SQUARED			= (6.25*SIGMA_2);
+const double FENE_TEST_MAX			= ((R_0 + R) * (R_0 + R))-0.001;
+const double FENE_TEST_MIN			= ((R_0 - R) * (R_0 - R))+0.001; 
 
 // Aggregate parameters //
 const int AGGREGATE_SIZE			= 3;
@@ -41,11 +43,11 @@ const double GLOBAL_DISPLACEMENT    = pow(SPHERICAL_CONSTRAINT,0.5)/20.0;
 
 // Number of iterations and frequency of replica exchange steps //
 const int TRAINING_PHASE			= 1000;
-const int EQUILIBRATION				= 1000;
+const int EQUILIBRATION				= 100000;
 
 // Total Number of Sweeps = DATA_POINTS * REPLICA_EXCHANGES * GLOBAL_UPDATE_FREQ * METROPOLIS_SWEEPS
 const int DATA_POINTS				= 10;
-const int REPLICA_EXCHANGES		  	= 50;
+const int REPLICA_EXCHANGES		  	= 500000;
 const bool GLOBAL_UPDATE			= true;
 const int GLOBAL_UPDATE_FREQ 		= 10;
 const int METROPOLIS_SWEEPS     	= (10*POLYMER_LENGTH*AGGREGATE_SIZE);
